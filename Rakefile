@@ -7,7 +7,7 @@ require 'pry'
 task :default => [:build]
 
 desc 'Build the docset'
-task :build => [:clean, :download, :make_database, :build_docset]
+task :build => [:clean, :download, :make_database, :build_docset, :compress_docset]
 
 task :clean do
   system('rm -rf hts-* backblue.gif fade.gif index.html cookies.txt')
@@ -64,6 +64,10 @@ task :build_docset do
   system("cp Info.plist #{contents_dir}/")
   system("cp docSet.dsidx #{resources_dir}/")
   system('cp icon.png Packer.docset/')
+end
+
+task :compress_docset do
+    system("tar --exclude='.DS_Store' -cvzf Packer.tgz Packer.docset")
 end
 
 def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file: nil)
