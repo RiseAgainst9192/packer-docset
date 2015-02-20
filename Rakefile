@@ -49,7 +49,7 @@ task :make_database do
   db[:searchIndex] << { name: 'Extend: Custom Provisioner',     type: 'Guide', path: 'extend/provisioner.html' }
 
   # Fudge bad entries
-  # db[:searchIndex].where(name: 'Provider', type: 'Provider').update(name: 'Mailgun')
+  db[:searchIndex].where(name: 'Build', type: 'Command', path: 'command-line/push.html').update(name: 'Push')
 
   db.disconnect
 end
