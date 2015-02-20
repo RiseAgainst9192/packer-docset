@@ -63,6 +63,7 @@ task :build_docset do
   system("cp -r packer.io/docs/* #{documents_dir}/")
   system("cp Info.plist #{contents_dir}/")
   system("cp docSet.dsidx #{resources_dir}/")
+  system('cp icon.png Packer.docset/')
 end
 
 def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file: nil)
