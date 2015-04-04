@@ -86,6 +86,3 @@ def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file:
     db[:searchIndex] << entry
   end
 end
-
-def fudge_db(db)
-end
