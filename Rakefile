@@ -17,7 +17,10 @@ end
 
 task :download do
   puts 'Downloading documentation...'
-  system('httrack http://packer.io/docs/ --mirror')
+  system('httrack http://packer.io/docs --mirror')
+  system('httrack http://packer.io/docs --update')
+  system('rm packer.io/index.html')
+  system('cp packer.io/intro.html packer.io/index.html')
 end
 
 task :make_database do
@@ -34,22 +37,22 @@ task :make_database do
   end
 
   # Add guides
-  db[:searchIndex] << { name: 'Installation',                   type: 'Guide', path: 'installation.html' }
-  db[:searchIndex] << { name: 'Terminology',                    type: 'Guide', path: 'basics/terminology.html' }
-  db[:searchIndex] << { name: 'Command-Line',                   type: 'Guide', path: 'command-line/introduction.html' }
-  db[:searchIndex] << { name: 'Templates',                      type: 'Guide', path: 'templates/introduction.html' }
-  db[:searchIndex] << { name: 'Core Configuration',             type: 'Guide', path: 'other/core-configuration.html' }
-  db[:searchIndex] << { name: 'Debugging',                      type: 'Guide', path: 'other/debugging.html' }
-  db[:searchIndex] << { name: 'Environment Variables',          type: 'Guide', path: 'other/environmental-variables.html' }
-  db[:searchIndex] << { name: 'Extend: Packer Plugins',         type: 'Guide', path: 'extend/plugins.html' }
-  db[:searchIndex] << { name: 'Extend: Developing Plugins',     type: 'Guide', path: 'extend/developing-plugins.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Builder',         type: 'Guide', path: 'extend/builder.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Command',         type: 'Guide', path: 'extend/command.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Post-Processor',  type: 'Guide', path: 'extend/post-processor.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Provisioner',     type: 'Guide', path: 'extend/provisioner.html' }
+  db[:searchIndex] << { name: 'Installation',                   type: 'Guide', path: 'docs/installation.html' }
+  db[:searchIndex] << { name: 'Terminology',                    type: 'Guide', path: 'docs/basics/terminology.html' }
+  db[:searchIndex] << { name: 'Command-Line',                   type: 'Guide', path: 'docs/command-line/introduction.html' }
+  db[:searchIndex] << { name: 'Templates',                      type: 'Guide', path: 'docs/templates/introduction.html' }
+  db[:searchIndex] << { name: 'Core Configuration',             type: 'Guide', path: 'docs/other/core-configuration.html' }
+  db[:searchIndex] << { name: 'Debugging',                      type: 'Guide', path: 'docs/other/debugging.html' }
+  db[:searchIndex] << { name: 'Environment Variables',          type: 'Guide', path: 'docs/other/environmental-variables.html' }
+  db[:searchIndex] << { name: 'Extend: Packer Plugins',         type: 'Guide', path: 'docs/extend/plugins.html' }
+  db[:searchIndex] << { name: 'Extend: Developing Plugins',     type: 'Guide', path: 'docs/extend/developing-plugins.html' }
+  db[:searchIndex] << { name: 'Extend: Custom Builder',         type: 'Guide', path: 'docs/extend/builder.html' }
+  db[:searchIndex] << { name: 'Extend: Custom Command',         type: 'Guide', path: 'docs/extend/command.html' }
+  db[:searchIndex] << { name: 'Extend: Custom Post-Processor',  type: 'Guide', path: 'docs/extend/post-processor.html' }
+  db[:searchIndex] << { name: 'Extend: Custom Provisioner',     type: 'Guide', path: 'docs/extend/provisioner.html' }
 
   # Fudge bad entries
-  db[:searchIndex].where(name: 'Build', type: 'Command', path: 'command-line/push.html').update(name: 'Push')
+  db[:searchIndex].where(name: 'Build', type: 'Command', path: 'docs/command-line/push.html').update(name: 'Push')
 
   db.disconnect
 end
@@ -60,14 +63,14 @@ task :build_docset do
   documents_dir = "#{resources_dir}/Documents"
 
   system("mkdir -p #{documents_dir}")
-  system("cp -r packer.io/docs/* #{documents_dir}/")
+  system("cp -r packer.io/* #{documents_dir}/")
   system("cp Info.plist #{contents_dir}/")
   system("cp docSet.dsidx #{resources_dir}/")
   system('cp icon.png Packer.docset/')
 end
 
 task :compress_docset do
-    system("tar --exclude='.DS_Store' -cvzf Packer.tgz Packer.docset")
+  system("tar --exclude='.DS_Store' -cvzf Packer.tgz Packer.docset")
 end
 
 def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file: nil)
@@ -78,7 +81,7 @@ def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file:
     name = doc.css('h1').first.content.sub(title_sub, '')
     name = [title_prefix, name].join(' ') if title_prefix
 
-    entry = { name: name, type: type, path: filename }
+    entry = { name: name, type: type, path: File.join('docs', filename) }
     puts entry
     db[:searchIndex] << entry
   end
