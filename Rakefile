@@ -51,9 +51,6 @@ task :make_database do
   db[:searchIndex] << { name: 'Extend: Custom Post-Processor',  type: 'Guide', path: 'docs/extend/post-processor.html' }
   db[:searchIndex] << { name: 'Extend: Custom Provisioner',     type: 'Guide', path: 'docs/extend/provisioner.html' }
 
-  # Fudge bad entries
-  db[:searchIndex].where(name: 'Build', type: 'Command', path: 'docs/command-line/push.html').update(name: 'Push')
-
   db.disconnect
 end
 
