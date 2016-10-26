@@ -4,6 +4,8 @@ require 'nokogiri'
 require 'logger'
 require 'pry'
 
+URL = 'www.packer.io'
+
 task :default => [:build]
 
 desc 'Build the docset'
@@ -12,15 +14,13 @@ task :build => [:clean, :download, :make_database, :build_docset, :compress_docs
 task :clean do
   system('rm -rf hts-* backblue.gif fade.gif index.html cookies.txt')
   system('rm -f docSet.dsidx')
-  system('rm -rf packer.io')
+  system("rm -rf #{URL}")
 end
 
 task :download do
   puts 'Downloading documentation...'
-  system('httrack http://www.packer.io/docs --mirror')
-  system('httrack http://www.packer.io/docs --update')
-  system('rm www.packer.io/index.html')
-  system('cp www.packer.io/intro/index.html www.packer.io/index.html')
+  system("httrack http://#{URL}/docs --mirror")
+  system("httrack http://#{URL}/docs --update")
 end
 
 task :make_database do
@@ -28,7 +28,7 @@ task :make_database do
   db.run('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
   db.run('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
-  Dir.chdir('www.packer.io/docs/') do
+  Dir.chdir('#{URL}/docs/') do
     generate_entries(db, path: 'command-line/*.html',     type: 'Command',      title_sub: /\w+-\w+: /,  skip_file: 'introduction')
     generate_entries(db, path: 'provisioners/*.html',     type: 'Provisioner',  title_sub: ' Provisioner')
 
@@ -61,7 +61,7 @@ task :build_docset do
   documents_dir = "#{resources_dir}/Documents"
 
   system("mkdir -p #{documents_dir}")
-  system("cp -r www.packer.io/* #{documents_dir}/")
+  system("cp -r #{URL}/* #{documents_dir}/")
   system("cp Info.plist #{contents_dir}/")
   system("cp docSet.dsidx #{resources_dir}/")
   system('cp icon.png Packer.docset/')
