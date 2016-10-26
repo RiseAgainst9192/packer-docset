@@ -17,10 +17,10 @@ end
 
 task :download do
   puts 'Downloading documentation...'
-  system('httrack http://packer.io/docs --mirror')
-  system('httrack http://packer.io/docs --update')
-  system('rm packer.io/index.html')
-  system('cp packer.io/intro.html packer.io/index.html')
+  system('httrack http://www.packer.io/docs --mirror')
+  system('httrack http://www.packer.io/docs --update')
+  system('rm www.packer.io/index.html')
+  system('cp www.packer.io/intro/index.html www.packer.io/index.html')
 end
 
 task :make_database do
@@ -28,10 +28,11 @@ task :make_database do
   db.run('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
   db.run('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
-  Dir.chdir('packer.io/docs/') do
+  Dir.chdir('www.packer.io/docs/') do
     generate_entries(db, path: 'command-line/*.html',     type: 'Command',      title_sub: /\w+-\w+: /,  skip_file: 'introduction')
     generate_entries(db, path: 'provisioners/*.html',     type: 'Provisioner',  title_sub: ' Provisioner')
 
+    generate_entries(db, path: 'templates/*.html',        type: 'Guide',        title_sub: ' Templates',      title_prefix: 'Template:')
     generate_entries(db, path: 'builders/*.html',         type: 'Guide',        title_sub: ' Builder',        title_prefix: 'Builder:')
     generate_entries(db, path: 'post-processors/*.html',  type: 'Guide',        title_sub: ' Post-Processor', title_prefix: 'Post-Processor:')
   end
@@ -60,7 +61,7 @@ task :build_docset do
   documents_dir = "#{resources_dir}/Documents"
 
   system("mkdir -p #{documents_dir}")
-  system("cp -r packer.io/* #{documents_dir}/")
+  system("cp -r www.packer.io/* #{documents_dir}/")
   system("cp Info.plist #{contents_dir}/")
   system("cp docSet.dsidx #{resources_dir}/")
   system('cp icon.png Packer.docset/')
