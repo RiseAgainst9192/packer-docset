@@ -28,7 +28,7 @@ task :make_database do
   db.run('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
   db.run('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
-  Dir.chdir('#{URL}/docs/') do
+  Dir.chdir("#{URL}/docs/") do
     generate_entries(db, path: 'command-line/*.html',     type: 'Command',      title_sub: /\w+-\w+: /,  skip_file: 'introduction')
     generate_entries(db, path: 'provisioners/*.html',     type: 'Provisioner',  title_sub: ' Provisioner')
 
