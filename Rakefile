@@ -4,17 +4,27 @@ require 'nokogiri'
 require 'logger'
 require 'pry'
 
-URL = 'www.packer.io'
+URL = 'www.packer.io'.freeze
 
-task :default => [:build]
+task default: [:local_build]
 
 desc 'Build the docset'
-task :build => [:clean, :download, :make_database, :build_docset, :compress_docset]
+task build: %i[clean download local_build]
 
 task :clean do
   system('rm -rf hts-* backblue.gif fade.gif index.html cookies.txt')
   system('rm -f docSet.dsidx')
   system("rm -rf #{URL}")
+end
+
+task :local_build do
+  system('rm -rf Packer.docset')
+  system('rm -f docSet.dsidx')
+
+  Rake::Task['remove_non_needed_html'].execute
+  Rake::Task['make_database'].execute
+  Rake::Task['build_docset'].execute
+  Rake::Task['compress_docset'].execute
 end
 
 task :download do
@@ -23,34 +33,45 @@ task :download do
   system("httrack http://#{URL}/docs --update")
 end
 
+task :remove_non_needed_html do
+  Dir.glob("#{URL}/**/*.html").each do |filename|
+    doc = Nokogiri::HTML(File.open(filename))
+
+    doc.search('//div[contains(@class, "mega-nav-sandbox")]').remove # remove the hashicorp header
+    doc.search('//a[text()="Edit this page"]').remove                # remove the 'edit this page' link
+
+    File.open(filename, 'w') do |file|
+      file.write(doc.to_html)
+    end
+  end
+end
+
 task :make_database do
   db = Sequel.connect('sqlite://docSet.dsidx', loggers: [Logger.new(STDOUT)])
   db.run('CREATE TABLE searchIndex(id INTEGER PRIMARY KEY, name TEXT, type TEXT, path TEXT);')
   db.run('CREATE UNIQUE INDEX anchor ON searchIndex (name, type, path);')
 
   Dir.chdir("#{URL}/docs/") do
-    generate_entries(db, path: 'command-line/*.html',     type: 'Command',      title_sub: /\w+-\w+: /,  skip_file: 'introduction')
-    generate_entries(db, path: 'provisioners/*.html',     type: 'Provisioner',  title_sub: ' Provisioner')
-
-    generate_entries(db, path: 'templates/*.html',        type: 'Guide',        title_sub: ' Templates',      title_prefix: 'Template:')
-    generate_entries(db, path: 'builders/*.html',         type: 'Guide',        title_sub: ' Builder',        title_prefix: 'Builder:')
-    generate_entries(db, path: 'post-processors/*.html',  type: 'Guide',        title_sub: ' Post-Processor', title_prefix: 'Post-Processor:')
+    generate_entries(db, path: 'commands/*.html',         type: 'Command', title_sub: [/\n  »\n  /, /\n$/, ' Command'],        skip_file: 'index')
+    generate_entries(db, path: 'provisioners/*.html',     type: 'Guide',   title_sub: [/\n  »\n  /, /\n$/, ' Provisioner'],    title_prefix: 'Provisioners:', skip_file: 'index')
+    generate_entries(db, path: 'templates/*.html',        type: 'Guide',   title_sub: [/\n  »\n  /, /\n$/, 'Template', /\s+/], title_prefix: 'Templates:', skip_file: 'index')
+    generate_entries(db, path: 'builders/*.html',         type: 'Guide',   title_sub: [/\n  »\n  /, /\n$/, ' Builder'],        title_prefix: 'Builders:', skip_file: 'index')
+    generate_entries(db, path: 'post-processors/*.html',  type: 'Guide',   title_sub: [/\n  »\n  /, /\n$/, ' Post-Processor'], title_prefix: 'Post-Processors:', skip_file: 'index')
+    generate_entries(db, path: 'extending/*.html',        type: 'Guide',   title_sub: [/\n  »\n  /, /\n$/, ' Extending'],      title_prefix: 'Extending:', skip_file: 'index')
   end
 
   # Add guides
-  db[:searchIndex] << { name: 'Installation',                   type: 'Guide', path: 'docs/installation.html' }
-  db[:searchIndex] << { name: 'Terminology',                    type: 'Guide', path: 'docs/basics/terminology.html' }
-  db[:searchIndex] << { name: 'Command-Line',                   type: 'Guide', path: 'docs/command-line/introduction.html' }
-  db[:searchIndex] << { name: 'Templates',                      type: 'Guide', path: 'docs/templates/introduction.html' }
-  db[:searchIndex] << { name: 'Core Configuration',             type: 'Guide', path: 'docs/other/core-configuration.html' }
-  db[:searchIndex] << { name: 'Debugging',                      type: 'Guide', path: 'docs/other/debugging.html' }
-  db[:searchIndex] << { name: 'Environment Variables',          type: 'Guide', path: 'docs/other/environmental-variables.html' }
-  db[:searchIndex] << { name: 'Extend: Packer Plugins',         type: 'Guide', path: 'docs/extend/plugins.html' }
-  db[:searchIndex] << { name: 'Extend: Developing Plugins',     type: 'Guide', path: 'docs/extend/developing-plugins.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Builder',         type: 'Guide', path: 'docs/extend/builder.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Command',         type: 'Guide', path: 'docs/extend/command.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Post-Processor',  type: 'Guide', path: 'docs/extend/post-processor.html' }
-  db[:searchIndex] << { name: 'Extend: Custom Provisioner',     type: 'Guide', path: 'docs/extend/provisioner.html' }
+  db[:searchIndex] << { name: 'Install Packer',           type: 'Guide', path: 'docs/install/index.html' }
+  db[:searchIndex] << { name: 'Packer Terminology',       type: 'Guide', path: 'docs/basics/terminology.html' }
+  db[:searchIndex] << { name: 'Command-Line',             type: 'Guide', path: 'docs/commands/index.html' }
+  db[:searchIndex] << { name: 'Templates',                type: 'Guide', path: 'docs/templates/index.html' }
+  db[:searchIndex] << { name: 'Builders',                 type: 'Guide', path: 'docs/builders/index.html' }
+  db[:searchIndex] << { name: 'Provisioners',             type: 'Guide', path: 'docs/provisioners/index.html' }
+  db[:searchIndex] << { name: 'Post-Processors',          type: 'Guide', path: 'docs/post-processors/index.html' }
+  db[:searchIndex] << { name: 'Extending Packer',         type: 'Guide', path: 'docs/extending/index.html' }
+  db[:searchIndex] << { name: 'Environment Variables',    type: 'Guide', path: 'docs/other/environment-variables.html' }
+  db[:searchIndex] << { name: 'Core Configuration',       type: 'Guide', path: 'docs/other/core-configuration.html' }
+  db[:searchIndex] << { name: 'Debugging',                type: 'Guide', path: 'docs/other/debugging.html' }
 
   db.disconnect
 end
@@ -76,7 +97,8 @@ def generate_entries(db, path:, type:, title_sub:, title_prefix: nil, skip_file:
     next if skip_file && filename.include?(skip_file)
 
     doc  = Nokogiri::HTML(File.open(filename))
-    name = doc.css('h1').first.content.sub(title_sub, '')
+    name = doc.css('h1').first.content
+    name = title_sub.reduce(name) { |memo, sub_cmd| memo.sub(sub_cmd, '') } if title_sub
     name = [title_prefix, name].join(' ') if title_prefix
 
     entry = { name: name, type: type, path: File.join('docs', filename) }
